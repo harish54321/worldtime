@@ -1,0 +1,174 @@
+<h1>World Clock</h2>
+
+<div id="locationField">
+  <div class="ui icon input">
+    <input id="autocomplete" placeholder="Ex. Sydney, Australia" type="text"></input>
+    <i class="circular search link icon"></i>
+  </div>
+</div>
+
+<div class="ui container clocks">
+  <div class="ui cards">
+    <% @clocks.each do |clock| %>
+      <div class="card" id="<%= clock.place_id %>">
+        <!-- <div class="image">
+          <img src="/images/avatar2/large/matthew.png">
+        </div> -->
+        <div class="content">
+          <div class="header">---</div>
+          <div class="meta">
+            <a href="<%= clock.map_url %>" target="_blank">Wikipedia</a>
+          </div>
+          <div class="description">
+            ---
+          </div>
+        </div>
+        <div class="extra content">
+          <span class="right floated">
+            Joined in 2013
+          </span>
+          <span>
+            <i class="user icon"></i>
+            75 Friends
+          </span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+
+<div class="ui modal" id="popupClock">
+  <i class="close icon"></i>
+  <div class="header">
+    <i class="spinner icon spin"></i>
+  </div>
+  <div class="image content">
+    <div class="ui medium image">
+      <img src="/images/avatar/large/chris.jpg">
+    </div>
+    <div class="description">
+      <i class="spinner icon spin"></i>
+    </div>
+    <div>
+      Do you want to add this clock?
+    </div>
+  </div>
+  <div class="actions">
+    <div class="ui black deny button">
+      Nope
+    </div>
+    <div class="ui positive right labeled icon button">
+      Yep, please.
+      <i class="checkmark icon"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+  (function() {
+    autocomplete = new google.maps.places.Autocomplete(
+        (document.getElementById('autocomplete')),
+        {types: ['geocode']}
+        );
+    autocomplete.addListener('place_changed', fillInAddress);
+  })();
+
+  function fillInAddress() {
+    var place = autocomplete.getPlace();
+    showPopupClock(place)
+  }
+</script>
+
+
+<script>
+var apikey = "<%= @google_api_key %>"
+var daysofweek = ['Sun', 'Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
+var clock_timer = null;
+
+function currentlocaltime(divid, loc, place){
+    var container = document.getElementById(divid)
+    var targetDate = new Date() // Current date/time of user computer
+    var timestamp = targetDate.getTime()/1000 + targetDate.getTimezoneOffset() * 60 // Current UTC date/time expressed as seconds since midnight, January 1, 1970 UTC
+    var apicall = 'https://maps.googleapis.com/maps/api/timezone/json?location=' + loc + '&timestamp=' + timestamp + '&key=' + apikey
+
+    var xhr = new XMLHttpRequest()
+    xhr.open('GET', apicall)
+    xhr.onload = function(){
+        if (xhr.status === 200){
+            var output = JSON.parse(xhr.responseText)
+            if (output.status == 'OK'){
+                var offsets = output.dstOffset * 1000 + output.rawOffset * 1000
+                var localdate = new Date(timestamp * 1000 + offsets)
+                var refreshDate = new Date()
+                var millisecondselapsed = refreshDate - targetDate
+                localdate.setMilliseconds(localdate.getMilliseconds()+ millisecondselapsed)
+
+                clock_timer = setInterval(function(){
+                    localdate.setSeconds(localdate.getSeconds()+1)
+                    updateClockCard(container, place, localdate, output.dstOffset)
+                }, 1000)
+            }
+        }
+        else{
+            alert('Request failed.  Returned status of ' + xhr.status)
+        }
+    }
+    xhr.send()
+}
+
+var updateClockCard = function(container, place, time, dst){
+  var formatted_time = time.toLocaleTimeString('en-US') + " (" + daysofweek[ time.getDay() ] + ")"
+  $(container).find('.header').text(place)
+  $(container).find('.description').text(formatted_time)
+}
+
+var showPopupClock = function(place){
+  currentlocaltime('popupClock', place.geometry.location.lat() + ', ' + place.geometry.location.lng(), place.formatted_address)
+  $('.ui.modal#popupClock').modal({
+      blurring: true,
+      closable  : false,
+      onDeny    : function(){
+        // window.alert('Wait not yet!');
+        // return false;
+      },
+      onApprove : function() {
+        // window.alert('Approved!');
+        var data = {
+          place_id: place.place_id,
+          name: place.name,
+          formatted_name: place.formatted_address,
+          lat: place.geometry.location.lat(),
+          lon: place.geometry.location.lng(),
+          map_url: place.url
+        }
+
+
+      },
+      onHidden: function(){
+        clearTimeout(clock_timer)
+        $("#popupClock").find('.header').html('<i class="spinner icon spin"></i>')
+        $("#popupClock").find('.description').html('<i class="spinner icon spin"></i>')
+      }
+  }).modal('show')
+
+}
+
+<% @clocks.each do |clock| %>
+  currentlocaltime('<%= clock.place_id %>', '<%= "#{clock.lat}, #{clock.lon}" %>', '<%= clock.name %>')
+<% end %>
+
+
+</script>

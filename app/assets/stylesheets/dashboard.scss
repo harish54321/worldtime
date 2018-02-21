@@ -1,0 +1,45 @@
+@import "semantic-ui";
+body{
+  /*background-image: url('/assets/earth_wallpaper.jpeg')*/
+  background-color: #0E6EB8;
+  text-align: center;
+}
+h1{
+  color: white;
+  font-size: 3em;
+}
+
+#locationField{
+  text-align:center;
+  div{
+    margin: 0 auto;
+    display: table;
+    width: 50%;
+    input{
+      width: 100%;
+    }
+  }
+}
+
+.clocks{
+  margin-top: 50px;
+}
+.card{
+  .description{
+    font-size: 1.6em;
+    font-weight: bold;
+  }
+}
+
+#popupClock{
+  .description{
+    font-size: 3.5em;
+    font-weight: bold;
+  }
+}
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+.spin{
+  animation: spinner .6s linear infinite;
+}
